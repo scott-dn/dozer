@@ -1,9 +1,11 @@
+use std::net::{Ipv4Addr, SocketAddr};
+
 use axum::{
     extract::Extension,
     http::StatusCode,
+    Json,
     response::IntoResponse,
-    routing::{get, post},
-    Json, Router,
+    Router, routing::{get, post},
 };
 use k8s_openapi::api::batch::v1::{CronJob, Job};
 use kube::{
@@ -12,7 +14,6 @@ use kube::{
 };
 use serde::Deserialize;
 use serde_json::{json, to_value, Value};
-use std::net::{Ipv4Addr, SocketAddr};
 use tracing::info;
 
 #[derive(Deserialize)]

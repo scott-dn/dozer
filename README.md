@@ -27,19 +27,19 @@ Directory structure:
 
 1. Monitoring solution:
 
-   - prometheus, grafana
+    - prometheus, grafana
 
 2. Fault tolerance solution:
 
-   - retry, HA solution
+    - retry, HA solution
 
 3. Scalability solution:
 
-   - [Pod](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
-   - [Cluster](https://docs.aws.amazon.com/eks/latest/userguide/autoscaling.html)
+    - [Pod](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
+    - [Cluster](https://docs.aws.amazon.com/eks/latest/userguide/autoscaling.html)
 
 4. Running 100s of these jobs in parallel:
-   - [Parallel](https://kubernetes.io/docs/concepts/workloads/controllers/job/#parallel-jobs)
+    - [Parallel](https://kubernetes.io/docs/concepts/workloads/controllers/job/#parallel-jobs)
 
 #### Curl samples:
 
