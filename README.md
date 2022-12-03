@@ -1,4 +1,4 @@
-#### K8S job/cronjob solution
+### K8S job/cronjob solution
 
 Implement a very simple API server in rust with the following routes that can interact with kubernetes.
 
@@ -25,26 +25,25 @@ Directory structure:
 │   └── main.rs
 ```
 
-Monitoring solution:
+1. Monitoring solution:
 
-- prometheus, grafana
+   - prometheus, grafana
 
-Fault tolerance solution:
+2. Fault tolerance solution:
 
-- retry, HA solution
+   - retry, HA solution
 
-Scalability solution:
+3. Scalability solution:
 
-- [Pod](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
-- [Cluster](https://docs.aws.amazon.com/eks/latest/userguide/autoscaling.html)
+   - [Pod](https://kubernetes.io/docs/tasks/run-application/horizontal-pod-autoscale/)
+   - [Cluster](https://docs.aws.amazon.com/eks/latest/userguide/autoscaling.html)
 
-Running 100s of these jobs in parallel:
+4. Running 100s of these jobs in parallel:
+   - [Parallel](https://kubernetes.io/docs/concepts/workloads/controllers/job/#parallel-jobs)
 
-- [Parallel](https://kubernetes.io/docs/concepts/workloads/controllers/job/#parallel-jobs)
+#### Curl samples:
 
-Curl samples:
-
-POST /jobs
+1. POST /jobs
 
 ```bash
 $ curl -XPOST localhost:8080/jobs \
@@ -52,13 +51,13 @@ $ curl -XPOST localhost:8080/jobs \
 -d '{"name":"test-job"}'
 ```
 
-GET /jobs/stats
+2. GET /jobs/stats
 
 ```bash
 $ curl localhost:8080/jobs/stats
 ```
 
-POST /jobs/schedule
+3. POST /jobs/schedule
 
 ```bash
 $ curl -XPOST localhost:8080/jobs/schedule \
