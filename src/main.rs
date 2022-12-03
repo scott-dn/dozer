@@ -1,10 +1,11 @@
 use axum::{
     extract::Extension,
+    http::StatusCode,
     response::IntoResponse,
     routing::{get, post},
     Json, Router,
 };
-use k8s_openapi::{api::batch::v1::Job, http::StatusCode};
+use k8s_openapi::api::batch::v1::{CronJob, Job};
 use kube::{
     api::{Api, ListParams, PostParams},
     Client,
@@ -19,18 +20,25 @@ pub struct CreateJob {
     pub name: String,
 }
 
+#[derive(Deserialize)]
+pub struct CreateCronJob {
+    pub name: String,
+    pub syntax: String,
+}
+
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {
     tracing_subscriber::fmt::init();
 
     let client = Client::try_default().await?;
-    let jobs: Api<Job> = Api::default_namespaced(client);
+    let jobs: Api<Job> = Api::default_namespaced(client.clone());
+    let cronjob: Api<CronJob> = Api::default_namespaced(client);
 
     let app = Router::new()
         .route("/jobs", post(create_job))
         .route("/jobs/stats", get(get_jobs))
-        // .route("/jobs/schedule", post(schedule_job))
-        .layer(Extension((jobs,)));
+        .route("/jobs/schedule", post(schedule_job))
+        .layer(Extension((jobs, cronjob)));
 
     let addr = SocketAddr::from((Ipv4Addr::new(0, 0, 0, 0), 8080));
 
@@ -44,7 +52,7 @@ async fn main() -> anyhow::Result<()> {
     Ok(())
 }
 
-async fn get_jobs(Extension((jobs,)): Extension<(Api<Job>,)>) -> impl IntoResponse {
+async fn get_jobs(Extension((jobs, _)): Extension<(Api<Job>, Api<CronJob>)>) -> impl IntoResponse {
     let data = match jobs.list(&ListParams::default()).await {
         Ok(data) => data,
         Err(e) => return handle_resp_err(e, StatusCode::INTERNAL_SERVER_ERROR),
@@ -70,7 +78,7 @@ async fn get_jobs(Extension((jobs,)): Extension<(Api<Job>,)>) -> impl IntoRespon
 }
 
 async fn create_job(
-    Extension((jobs,)): Extension<(Api<Job>,)>,
+    Extension((jobs, _)): Extension<(Api<Job>, Api<CronJob>)>,
     Json(payload): Json<CreateJob>,
 ) -> impl IntoResponse {
     let data = match serde_json::from_value(json!({
@@ -102,6 +110,43 @@ async fn create_job(
         Err(e) => return handle_resp_err(e, StatusCode::BAD_REQUEST),
     };
     if let Err(e) = jobs.create(&PostParams::default(), &data).await {
+        return handle_resp_err(e, StatusCode::BAD_REQUEST);
+    }
+    (StatusCode::OK, Json(json!({})))
+}
+
+async fn schedule_job(
+    Extension((_, cronjob)): Extension<(Api<Job>, Api<CronJob>)>,
+    Json(payload): Json<CreateCronJob>,
+) -> impl IntoResponse {
+    let data = match serde_json::from_value(json!({
+        "apiVersion": "batch/v1",
+        "kind": "CronJob",
+        "metadata": {
+            "name": payload.name,
+        },
+        "spec": {
+            "schedule": payload.syntax,
+            "jobTemplate": {
+                "spec":{
+                    "template": {
+                        "spec": {
+                            "containers": [{
+                                "name": "data-processor-container",
+                                "image": "data-processor:latest",
+                                "imagePullPolicy": "IfNotPresent"
+                            }],
+                            "restartPolicy": "Never",
+                        }
+                    }
+                }
+            }
+        }
+    })) {
+        Ok(data) => data,
+        Err(e) => return handle_resp_err(e, StatusCode::BAD_REQUEST),
+    };
+    if let Err(e) = cronjob.create(&PostParams::default(), &data).await {
         return handle_resp_err(e, StatusCode::BAD_REQUEST);
     }
     (StatusCode::OK, Json(json!({})))
